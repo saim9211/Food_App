@@ -34,7 +34,7 @@ class TinnyGG(nn.Module):
         )
         self.classifier = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(in_features=hidden_units * 7 * 7, out_features=output_shape)
+            nn.Linear(in_features=hidden_units * 15 * 15, out_features=output_shape)
         )
     def forward(self, x:torch.Tensor) -> torch.Tensor:
         """

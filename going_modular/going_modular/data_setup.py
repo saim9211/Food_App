@@ -6,7 +6,7 @@ import os
 from torchvision import transforms,datasets
 from torch.utils.data import DataLoader
 
-Num_workers = os.cpu_count()
+Num_workers = 0
 
 def create_dataloaders(train_dir:str, test_dir:str, transform:transforms.Compose, batch_size:int):
     """

@@ -1,35 +1,46 @@
-import os
-import torch
-import data_setup, engine, model_builder, utils
 
+import os 
+import torch 
+import data_setup, engine, model_builder, utils
 from torchvision import transforms
 
-import os
-import requests
-import zipfile
-from pathlib import Path
+# set up training hyperparameters
+NUM_EPOCHS = 5
+BATCH_SIZE = 32
+HIDDEN_UNITS = 10
+LEARNING_RATE = 0.001
 
-# Setup path to data folder
-data_path = Path("data/")
-image_path = data_path / "pizza_steak_sushi"
+#set up directories
+train_dir = "data/pizza_steak_sushi/train"
+test_dir = "data/pizza_steak_sushi/test"
 
-# If the image folder doesn't exist, download it and prepare it... 
-if image_path.is_dir():
-    print(f"{image_path} directory exists.")
-else:
-    print(f"Did not find {image_path} directory, creating one...")
-    image_path.mkdir(parents=True, exist_ok=True)
+#set up target device
+device = "cuda" if torch.cuda.is_available() else "cpu"
+# creat transformations
+data_transform = transforms.Compose([
+    transforms.Resize((64, 64)),
+    transforms.ToTensor()
+])
+# create dataloader with help of data_setup.py
+train_dataloader, test_dataloader, class_names = data_setup.create_dataloaders(train_dir=train_dir,
+                                                                                 test_dir=test_dir,
+                                                                                 transform=data_transform,
+                                                                                 batch_size=BATCH_SIZE)
+#create model with help of model_builder.py
+model=model_builder.TinnyGG(input_shape=3, hidden_units=HIDDEN_UNITS, output_shape=len(class_names)).to(device)
+# set loss and optimizer
+loss_fn=torch.nn.CrossEntropyLoss()
+optimizer=torch.optim.Adam(params=model.parameters(), lr=LEARNING_RATE)
+#strat training with help of engine.py
+engine.train(model=model,
+                train_dataloader=train_dataloader,
+                test_dataloader=test_dataloader,
+                optimizer=optimizer,
+                loss_fn=loss_fn,
+                epochs=NUM_EPOCHS,
+                device=device)
 
-# Download pizza, steak, sushi data
-with open(data_path / "pizza_steak_sushi.zip", "wb") as f:
-    request = requests.get("https://github.com/mrdbourke/pytorch-deep-learning/raw/main/data/pizza_steak_sushi.zip")
-    print("Downloading pizza, steak, sushi data...")
-    f.write(request.content)
-
-# Unzip pizza, steak, sushi data
-with zipfile.ZipFile(data_path / "pizza_steak_sushi.zip", "r") as zip_ref:
-    print("Unzipping pizza, steak, sushi data...") 
-    zip_ref.extractall(image_path)
-
-# Remove zip file
-os.remove(data_path / "pizza_steak_sushi.zip")
+#daved teh model with help of utlis.py
+utils.save_model(model=model,
+                    target_dir="models",
+                    model_name="06_going_modular_tingvgg_model.pth")
